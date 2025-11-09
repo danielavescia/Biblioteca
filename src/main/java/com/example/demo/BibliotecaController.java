@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 @RestController
 @RequestMapping("/biblioteca") //adicionando raiz no controlador para agrupar os endpoints
@@ -81,8 +84,7 @@ public class BibliotecaController {
     @GetMapping("/livro/titulo/{titulo}")
     public List<Livro> getLivrosByTitulo(@PathVariable String titulo){
         return livros.stream()
-        .filter(l-> l.getTitulo()
-        .equalsIgnoreCase(titulo))
+        .filter(l -> l.getTitulo().equalsIgnoreCase(titulo))
         .toList();
     }
 
@@ -93,6 +95,18 @@ public class BibliotecaController {
         .distinct()
         .toList();
         
+    }
+    
+    @PostMapping("/livro/cadastra")
+    public String postMethodName(@RequestBody Livro l) {
+        
+        if(l == null){
+            return "Adicione os dados necessáios para adicionar o livro";
+        }
+        
+        livros.add(l);
+        
+        return String.format("Livro adicionado com sucesso! %s", l);
     }
     
 
