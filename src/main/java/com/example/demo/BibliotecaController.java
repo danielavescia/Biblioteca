@@ -11,8 +11,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PutMapping;
 
 
+/**
+ * Controlador responsável por gerenciar os endpoints de livros
+ */
 @RestController
 @RequestMapping("/biblioteca") //adicionando raiz no controlador para agrupar os endpoints
 public class BibliotecaController {
@@ -57,24 +61,39 @@ public class BibliotecaController {
             );
      
      }
-
+    /**
+     * Exibe mensagem de boas-vindas da biblioteca
+     * @return status code 200 e a mensangem de boas-vidas
+     */
     @GetMapping
     public ResponseEntity<String> mensagemDeBemVindo() {
         return ResponseEntity.ok("Bem vindo a biblioteca central!");
     }
 
+    /**
+     * Método responsável por retornar a lista de livros do acervo
+     * @return lista de livros e status 200 se há livros, 204 se acervo está vazio
+     */
+
     @GetMapping("/livros")
     public ResponseEntity<List<Livro>> getLivros(){
         
         if(livros.isEmpty()){
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.noContent().build();
         }
 
         return ResponseEntity.ok(livros);
     }
 
+    /**
+     * Retorna livro especifico dado pela id que é um parametro
+     * @param int id enviado no corpo da requisição
+     * @return status code 200 com o objeto requisitado e
+     * 404 se id desejada não existe
+     
+     */
     @GetMapping("/livro/id/{id}")
-    public ResponseEntity<Livro> getLivroById(@PathVariable int id){
+    public ResponseEntity<?> getLivroById(@PathVariable Integer id){
 
         return livros.stream()
                     .filter(l-> l.getId() == id)
@@ -83,35 +102,52 @@ public class BibliotecaController {
                     .orElse(ResponseEntity.notFound().build());
     }
 
+     /**
+     * Retorna lista de livro especifico de um autor dado através do request body
+     * @param string autor enviado no corpo da requisição
+     * @return status code 200 se há livros do autor solicitado 
+     * ou status 204 caso não encontre correspondência entre o objeto solicitado e o acervo.
+     */
     @GetMapping("/livro/autor/{autor}")
-    public ResponseEntity<List<Livro>> getLivrosByAutor(@PathVariable String autor){
-       
+    public ResponseEntity<?> getLivrosByAutor(@PathVariable String autor){
+
         var livroAutor = livros.stream()
        .filter(l-> l.getAutor()
        .equalsIgnoreCase(autor))
        .toList();
        
        if(livroAutor.isEmpty()){
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.noContent().build();
        }
 
         return ResponseEntity.ok(livroAutor);
     }
     
+    /**
+     * Retorna lista de livro especifico com o titulo solicitado através do request body
+     * @param string titulo enviado no corpo da requisição
+     * @return status code 200 se há o titulo solicitado 
+     * ou status 204 caso não encontre correspondência entre o titulo desejado.
+     */
     @GetMapping("/livro/titulo/{titulo}")
-    public ResponseEntity<List<Livro>> getLivrosByTitulo(@PathVariable String titulo){
+    public ResponseEntity<?> getLivrosByTitulo(@PathVariable String titulo){
 
         var t = livros.stream()
         .filter(l -> l.getTitulo().equalsIgnoreCase(titulo))
         .toList();
 
-        if(titulo == null){
-             return ResponseEntity.notFound().build();
+        if(t.isEmpty()){
+            return ResponseEntity.noContent().build();
         }
 
         return ResponseEntity.ok(t);
     }
 
+    /**
+     * Retorna lista de string com os autores disponíveis no acervo 
+     * 
+     * @return status code 200 se há autores cadastrados ou status 204 caso não há autores cadastrados
+     */
     @GetMapping("/autores")
     public ResponseEntity<List<String>> getAutores(){
        
@@ -121,24 +157,108 @@ public class BibliotecaController {
        .toList();
 
         if(autores.isEmpty()){
-             return ResponseEntity.notFound().build();
+              return ResponseEntity.noContent().build();
         }
 
         return ResponseEntity.ok(autores);   
         
     }
+
+    /**
+     * Retorna lista de objetos do tipo livro com os livros publicados no ano solicitada via parametro 
+     * @param Integer ano de publicação solicitado via parâmetro
+     * @return status code 200 se há livros publicados no ano desejado, 
+     * ou status 204 caso não encontra correspondência.
+     */
+    @GetMapping("/livros/porAno/{ano}")
+    public ResponseEntity<?> getLivrosPorAno(@PathVariable Integer ano) {
+        
+        var livrosDomain = livros.stream()
+        .filter(l-> l
+        .getAnoPublicacao() == ano)
+        .toList();
+
+        if(livrosDomain.isEmpty()) return ResponseEntity.noContent().build();
+        
+        return ResponseEntity.ok(livrosDomain);
+    }
+
+    /**
+     * Retorna uma lista dos livros cujo ano de publicação é inferior ao ano informado.
+     * @param int ano dsejado para filtrar os livros mais antigos.
+     * @return lista de objetos tipo livro que possuem a data menor que a informada por parâmetro,
+     * caso não haja correspondência retorna 204 No Content
+     */
+    @GetMapping("livros/desatualizados/{ano}")
+    public ResponseEntity<List<Livro>> getLivrosDesatualizados(@PathVariable int ano) {
+        var livrosDomain = livros.stream()
+        .filter(l -> l.getAnoPublicacao() < ano)
+        .toList();
+
+        if( livrosDomain .isEmpty()){
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(livrosDomain);
+    }
+
+    /**
+     * Retorna uma lista dos livros cujo ano de publicação e autor correspondentes aos parâmetros.
+     * @param Integer ano dsejado para filtrar anoPublicação e 
+     * @param String com o nome do autor desejado
+     * @return lista de objetos tipo livro que correspondem aos parâmetros informados.
+     */
+
+    @GetMapping("/livros/autor/{autor}/ano/{ano}")
+    public ResponseEntity<?> getMethodName(@PathVariable String autor, @PathVariable Integer ano) {
+        
+        var livrosDomain = livros.stream()
+        .filter(l -> l.getAutor().equalsIgnoreCase(autor))
+        .filter(l -> l.getAnoPublicacao() == ano)
+        .toList();
+
+        if( livrosDomain .isEmpty()){
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(livrosDomain);
+    }
     
+    
+    /**
+     * Cria um objeto do tipo livro através das informações do body para cadastrar um novo livro no acervo 
+     * @param objeto do tipo livro enviado no corpo da requisição
+     * @return status code 201 para informar livro criado com sucesso
+     */
     @PostMapping("/livro/cadastra")
     public ResponseEntity<?> cadastraLivro(@RequestBody Livro livroCriado) {
-        
-        if(livroCriado == null){
-            return ResponseEntity.badRequest().body("Preencha o cadastro para adicionar o livro"); 
-        }
         
         livros.add(livroCriado);
         
         return ResponseEntity.status(HttpStatus.CREATED).body(livroCriado); // retorna status 201
     }
     
+    /**
+     * Endpoint responsável por atualizar todos os dados de um livro, menos id, conforme os 
+     * dados fornecidos pelo corpo da mensagem
+     * @param id
+     * @param livroDto
+     * @return o livro atualizado com os dados enviados no corpo da requisição
+     */
 
+    @PutMapping("livro/{id}")
+    public ResponseEntity<?> atualizarIdLivro(@RequestBody int id, @RequestBody Livro livroDto) {
+        
+        var livroDomain = livros.stream().filter(l->l.getId() == id).findFirst();
+
+        if(livroDomain.isEmpty()) return ResponseEntity.notFound().build();
+
+        var livro = livroDomain.get();
+        livro.setTitulo(livroDto.getTitulo());
+        livro.setAnoPublicacao(livroDto.getAnoPublicacao());
+        livro.setAutor(livroDto.getAutor());
+        livro.setId(id);
+
+        return ResponseEntity.ok(livro);
+    }
+
+    
 }
