@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 
 @RestController
@@ -57,56 +59,85 @@ public class BibliotecaController {
      }
 
     @GetMapping
-    public String mensagemDeBemVindo() {
-        return "Bem vindo a biblioteca central!";
+    public ResponseEntity<String> mensagemDeBemVindo() {
+        return ResponseEntity.ok("Bem vindo a biblioteca central!");
     }
 
     @GetMapping("/livros")
-    public List<Livro> getLivros(){
-        return livros;
+    public ResponseEntity<List<Livro>> getLivros(){
+        
+        if(livros.isEmpty()){
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(livros);
     }
 
     @GetMapping("/livro/id/{id}")
-    public List<Livro> getLivroById(@PathVariable int id){
-      return  livros.stream()
-      .filter(l-> l.getId() == id)
-      .toList();
+    public ResponseEntity<Livro> getLivroById(@PathVariable int id){
+
+        return livros.stream()
+                    .filter(l-> l.getId() == id)
+                    .findFirst()
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/livro/autor/{autor}")
-    public List<Livro> getLivrosByAutor(@PathVariable String autor){
-       return livros.stream()
+    public ResponseEntity<List<Livro>> getLivrosByAutor(@PathVariable String autor){
+       
+        var livroAutor = livros.stream()
        .filter(l-> l.getAutor()
        .equalsIgnoreCase(autor))
        .toList();
+       
+       if(livroAutor.isEmpty()){
+        return ResponseEntity.notFound().build();
+       }
+
+        return ResponseEntity.ok(livroAutor);
     }
     
     @GetMapping("/livro/titulo/{titulo}")
-    public List<Livro> getLivrosByTitulo(@PathVariable String titulo){
-        return livros.stream()
+    public ResponseEntity<List<Livro>> getLivrosByTitulo(@PathVariable String titulo){
+
+        var t = livros.stream()
         .filter(l -> l.getTitulo().equalsIgnoreCase(titulo))
         .toList();
+
+        if(titulo == null){
+             return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(t);
     }
 
     @GetMapping("/autores")
-    public List<String> getLivrosByTitulo(){
-        return livros.stream()
-        .map(Livro::getAutor)
-        .distinct()
-        .toList();
+    public ResponseEntity<List<String>> getAutores(){
+       
+        var autores =  livros.stream()
+       .map(Livro::getAutor)
+       .distinct()
+       .toList();
+
+        if(autores.isEmpty()){
+             return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(autores);   
         
     }
     
     @PostMapping("/livro/cadastra")
-    public String postMethodName(@RequestBody Livro l) {
+    public ResponseEntity<?> cadastraLivro(@RequestBody Livro livroCriado) {
         
-        if(l == null){
-            return "Adicione os dados necessáios para adicionar o livro";
+        if(livroCriado == null){
+            return ResponseEntity.badRequest().body("Preencha o cadastro para adicionar o livro"); 
         }
         
-        livros.add(l);
+        livros.add(livroCriado);
         
-        return String.format("Livro adicionado com sucesso! %s", l);
+        return ResponseEntity.status(HttpStatus.CREATED).body(livroCriado); // retorna status 201
     }
     
 
